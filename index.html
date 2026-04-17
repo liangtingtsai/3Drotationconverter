@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -6,436 +7,674 @@
 <link rel="apple-touch-icon" type="image/png" href="rotation-icon.png">
 <title>3D Rotation Converter</title>
 <style>
-@media all {
-	html{
-		font-family:Garamond, Palatino, serif;
-		font-size:18px;
-		line-height:1.3;
-	}
-	.dcol{
-		float:left;
-		width:50%;
-		padding-right:1.5rem;
-		box-sizing:border-box;
-	}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  background: #f0f0f7;
+  color: #1a1a2e;
 }
-@media all and (max-width:1200px){
-    html{font-size:16px;}
+
+body {
+  min-height: 100vh;
+  padding: 1rem 1.5rem 1.5rem;
 }
-@media all and (max-width:980px){
-    html{font-size:16px;}
-	.dcol{width:100%;}
+
+#app { max-width: 1600px; margin: 0 auto; }
+
+.angle-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.92rem;
+  color: #666;
 }
-@media all and (max-width:800px){
-    html{font-size:15px;}
+
+.angle-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
 }
-@media all and (max-width:600px){
-    html{font-size:13px;}
+
+input[type="radio"] {
+  accent-color: #2d2d8f;
+  cursor: pointer;
 }
-@media all and (max-width:400px){
-    html{font-size:11px;}
+
+/* Layout */
+#layout {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
 }
-select, input, textarea, label{
-	font-family:"Lucida Console", "DejaVu Sans Mono", monospace;
-    font-size:0.9rem;
-    background:#dfdff5;
-    border:1px solid #323296;
-    color:#000;
-    margin:0.1rem;
+
+@media (orientation: landscape) {
+  #layout { flex-direction: row; height: calc(100vh - 2.5rem); }
+  #panels-container {
+    flex: 0 0 auto;
+    width: 42%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    padding-right: 1.0rem;
+  }
+  #viz-container {
+    flex: 1;
+  }
 }
-textarea{
-	background:#fff;
-    font-weight:bold;
+
+@media (orientation: portrait) {
+  #layout { flex-direction: column; }
+  #viz-container { width: 100%; }
+  #panels-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 }
-select, label{
-	font-family:Garamond, Palatino, Times;
-	font-size:1rem;
-	margin:0rem 0.2rem;
-	padding:0.1rem 0.2rem;
+
+/* Panels */
+.panel {
+  background: #fff;
+  border: 1.5px solid #d8d8ec;
+  border-radius: 10px;
+  padding: 0.6rem 1.1rem 0.7rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-body{
-    margin:0.5rem auto;
-    max-width:1800px;
-    padding:1.5rem;
-    padding-right:0rem;
-    position:relative;
+
+.panel.phigh {
+  border-color: #2d2d8f;
+  box-shadow: 0 0 0 2px rgba(45,45,143,0.1);
 }
-.pi, textarea{
-    padding:0.3rem;
+
+.panel-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #888;
+  margin-bottom: 0.5rem;
+  user-select: none;
 }
-input{
-    width:5rem;
+
+.panel.phigh .panel-title { color: #2d2d8f; }
+
+.panel-title {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
 }
-input[type="radio"]{
-	height:auto;
-    width:auto;
+
+.chevron {
+  font-size: 0.85rem;
+  color: #aaa;
+  transition: transform 0.2s;
+  flex-shrink: 0;
 }
-input, select{
-    margin-right:0.5rem;margin-top:0.5rem;
+
+.panel.collapsed .chevron { transform: rotate(-90deg); }
+
+.panel-body { margin-top: 0.2rem; }
+
+.panel.collapsed .panel-body { display: none; }
+
+.panel-note {
+  font-size: 0.72rem;
+  color: #999;
+  margin-bottom: 0.3rem;
+  line-height: 1.4;
 }
-.pi{
-    background:#eee;
-    transition:border-color 0.6s;
-    -webkit-transition:border-color 0.6s;
-    border:1px solid #fff;
+
+.field-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0;
 }
-.phigh{
-    border:1px solid #323296;
+
+.field-row input[type="number"],
+.field-row select {
+  flex: 1;
+  width: 0;
+  min-width: 3rem;
 }
-.phigh input{
-	font-weight:bold;
+
+.fl { /* field label */
+  font-size: 0.92rem;
+  color: #888;
+  width: 3rem;
+  flex-shrink: 0;
+  text-align: right;
+  user-select: none;
 }
-.dl, .dl2{
-    display:inline-block;
-    text-align:right;
-    min-width:5rem;
-    margin-right:0.3rem;
+
+
+.fnote {
+  font-size: 0.88rem;
+  color: #aaa;
+  margin-left: 3px;
+  user-select: none;
 }
-.dl2{
-    min-width:1rem;
+
+/* Number inputs */
+input[type="number"] {
+  font-family: "Lucida Console", "DejaVu Sans Mono", monospace;
+  font-size: 1rem;
+  width: 5.1rem;
+  background: #ededf8;
+  border: 1px solid #c4c4dc;
+  border-radius: 5px;
+  padding: 0.45rem 0.65rem;
+  color: #111;
+  transition: border-color 0.15s, background 0.15s;
 }
-textarea{
-    width:100%;
+
+input[type="number"]:focus {
+  outline: none;
+  border-color: #2d2d8f;
+  background: #dfdff5;
 }
+
+.panel.phigh input[type="number"] {
+  font-weight: 600;
+  border-color: #9898cc;
+  background: #e8e8f8;
+}
+
+.panel.phigh input[type="number"]:focus {
+  background: #dfdff5;
+  border-color: #2d2d8f;
+}
+
 input[type=number]::-webkit-outer-spin-button,
-input[type=number]::-webkit-inner-spin-button{
-	-webkit-appearance:none;
-	appearance:none;
-	margin:0;
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
+/* Select */
+select {
+  font-family: system-ui, sans-serif;
+  font-size: 1rem;
+  border: 1px solid #c4c4dc;
+  border-radius: 5px;
+  padding: 0.45rem 0.65rem;
+  background: #ededf8;
+  color: #111;
+  cursor: pointer;
 }
-input[type=number]{
-	-moz-appearance:textfield;
+
+select:focus { outline: none; border-color: #2d2d8f; }
+
+/* Matrix grid */
+.matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
+
+.matrix-grid input[type="number"] {
+  width: 100%;
+  flex: none;
+}
+
+/* Viz */
+#viz-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+#viz3d {
+  width: 100%;
+  flex: 1;
+  min-height: 200px;
+  border-radius: 10px;
+  background: #1a1a2e;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+  border: 1.5px solid #2d2d5f;
+}
+
+#viz3d:active { cursor: grabbing; }
+
+.viz-hint {
+  font-size: 0.7rem;
+  color: #aaa;
+  text-align: center;
+  user-select: none;
+}
+
 </style>
 </head>
 <body>
-<div class="main">
-<div>
+<div id="app">
+
 <form novalidate>
+<div id="layout">
 
-<h1><img src="rotation-icon.svg" style="height:1.2em; width:1.2em; margin-right:0.5em;" onerror="this.onerror=null; this.src='rotation-icon.png';" /> 3D Rotation Converter</h1>
+  <div id="panels-container">
 
-<div class="dcol">
-<h2>Input</h2>
-<p>Input angle format
-<label><input type="radio" id="iformatrad" name="iformat" value="0" checked onchange="update(inputMode)"/>Radians</label>
-<label><input type="radio" id="iformatdeg" name="iformat" value="1" onchange="update(inputMode)"/>Degrees</label>
-<p class="pi" id="ip0">Rotation matrix
-<br /><span class="dl"></span><input type="number" pattern="\d+(\.\d*)?" id="m00" value="1" oninput="update(0)"/>
-<span class="dl2"></span><input type="number" pattern="\d+(\.\d*)?" id="m01" value="0" oninput="update(0)"/>
-<span class="dl2"></span><input type="number" pattern="\d+(\.\d*)?" id="m02" value="0" oninput="update(0)"/> &nbsp;
-<br /><span class="dl"></span><input type="number" pattern="\d+(\.\d*)?" id="m10" value="0" oninput="update(0)"/>
-<span class="dl2"></span><input type="number" pattern="\d+(\.\d*)?" id="m11" value="1" oninput="update(0)"/>
-<span class="dl2"></span><input type="number" pattern="\d+(\.\d*)?" id="m12" value="0" oninput="update(0)"/> &nbsp;
-<br /><span class="dl"></span><input type="number" pattern="\d+(\.\d*)?" id="m20" value="0" oninput="update(0)"/>
-<span class="dl2"></span><input type="number" pattern="\d+(\.\d*)?" id="m21" value="0" oninput="update(0)"/>
-<span class="dl2"></span><input type="number" pattern="\d+(\.\d*)?" id="m22" value="1" oninput="update(0)"/>
-<p class="pi" id="ip1">Quaternion
-<br />
-<span class="dl">x</span><input type="number" pattern="\d+(\.\d*)?" id="q0" value="0" oninput="update(1)"/>
-<span class="dl2">y</span><input type="number" pattern="\d+(\.\d*)?" id="q1" value="0" oninput="update(1)"/>
-<span class="dl2">z</span><input type="number" pattern="\d+(\.\d*)?" id="q2" value="0" oninput="update(1)"/>
-<span class="dl">w (real part) <input type="number" pattern="\d+(\.\d*)?" id="q3" value="1" oninput="update(1)"/></span>
-<p class="pi" id="ip2">Axis-angle
-<br />
-<span class="dl">Axis x</span><input type="number" pattern="\d+(\.\d*)?" id="a0"  value="0" oninput="update(2)"/>
-<span class="dl2">y</span><input type="number" pattern="\d+(\.\d*)?" id="a1" value="0" oninput="update(2)"/>
-<span class="dl2">z</span><input type="number" pattern="\d+(\.\d*)?" id="a2" value="0" oninput="update(2)"/>
-<span class="dl">Angle<span name="spananglei"> (radians)</span> <input type="number" pattern="\d+(\.\d*)?" id="a3" value="0" oninput="update(2)"/></span>
-<p class="pi" id="ip3">Axis with angle magnitude<span name="spananglei"> (radians)</span>
-<br /><span class="dl">Axis x</span><input type="number" pattern="\d+(\.\d*)?" id="r0" value="0" oninput="update(3)"/>
-<span class="dl2">y</span><input type="number" pattern="\d+(\.\d*)?" id="r1" value="0" oninput="update(3)"/>
-<span class="dl2">z</span><input type="number" pattern="\d+(\.\d*)?" id="r2" value="0" oninput="update(3)"/>
-<p class="pi" id="ip4">Euler angles of multiple axis rotations<span name="spananglei"> (radians)</span>
-<br />
-<span class="dl"><select id="euler" onchange="update(4)">
-<option value="XYZ" selected>XYZ</option>
-<option value="XZY">XZY</option>
-<option value="YXZ">YXZ</option>
-<option value="YZX">YZX</option>
-<option value="ZXY">ZXY</option>
-<option value="ZYX">ZYX</option>
-</select></span>
-<span class="dl2">x</span><input type="number" pattern="\d+(\.\d*)?" id="e0" value="0" oninput="update(4)"/>
-<span class="dl2">y</span><input type="number" pattern="\d+(\.\d*)?" id="e1" value="0" oninput="update(4)"/>
-<span class="dl2">z</span><input type="number" pattern="\d+(\.\d*)?" id="e2" value="0" oninput="update(4)"/>
-<p class="pi" id="ip5">Triple of points, P, Q, R, 
-such that 
-X &#x2225; (Q&minus;P),  &nbsp;
-Z &#x2225; X &times; (R&minus;P), &nbsp;and 
-Y &#x2225; Z &times; X.
-<br />
-P:
-<span class="dl2">x</span><input type="number" pattern="\d+(\.\d*)?" id="Px" value="0" oninput="update(5)"/>
-<span class="dl2">y</span><input type="number" pattern="\d+(\.\d*)?" id="Py" value="0" oninput="update(5)"/>
-<span class="dl2">z</span><input type="number" pattern="\d+(\.\d*)?" id="Pz" value="0" oninput="update(5)"/>
-<br />
-Q:
-<span class="dl2">x</span><input type="number" pattern="\d+(\.\d*)?" id="Qx" value="1" oninput="update(5)"/>
-<span class="dl2">y</span><input type="number" pattern="\d+(\.\d*)?" id="Qy" value="0" oninput="update(5)"/>
-<span class="dl2">z</span><input type="number" pattern="\d+(\.\d*)?" id="Qz" value="0" oninput="update(5)"/>
-<br />
-R:
-<span class="dl2">x</span><input type="number" pattern="\d+(\.\d*)?" id="Rx" value="0" oninput="update(5)"/>
-<span class="dl2">y</span><input type="number" pattern="\d+(\.\d*)?" id="Ry" value="1" oninput="update(5)"/>
-<span class="dl2">z</span><input type="number" pattern="\d+(\.\d*)?" id="Rz" value="0" oninput="update(5)"/>
-<br/>
-</div>
+    <div class="angle-toggle">
+      <span>Angles:</span>
+      <label><input type="radio" id="formatdeg" name="format" value="1" checked onchange="onFormatChange()"> Degrees</label>
+      <label><input type="radio" id="formatrad" name="format" value="0" onchange="onFormatChange()"> Radians</label>
+    </div>
 
-<div class="dcol">
-<h2>Output</h2>
+    <!-- Panel 4: Euler Angles -->
+    <div class="panel phigh" id="ip4">
+      <div class="panel-title" onclick="togglePanel(this)">Euler Angles <span class="chevron">▾</span></div>
+      <div class="panel-body">
+        <div class="field-row">
+          <span class="fl">order</span>
+          <select id="euler" onchange="update(4)">
+            <option value="XYZ">XYZ</option>
+            <option value="XZY">XZY</option>
+            <option value="YXZ">YXZ</option>
+            <option value="YZX">YZX</option>
+            <option value="ZXY">ZXY</option>
+            <option value="ZYX">ZYX</option>
+          </select>
+        </div>
+        <div class="field-row"><span class="fl">x</span><input type="number" id="e0" value="0" oninput="update(4)"></div>
+        <div class="field-row"><span class="fl">y</span><input type="number" id="e1" value="0" oninput="update(4)"></div>
+        <div class="field-row"><span class="fl">z</span><input type="number" id="e2" value="0" oninput="update(4)"></div>
+      </div>
+    </div>
+
+    <!-- Panel 1: Quaternion -->
+    <div class="panel" id="ip1">
+      <div class="panel-title" onclick="togglePanel(this)">Quaternion <span class="chevron">▾</span></div>
+      <div class="panel-body">
+        <div class="field-row"><span class="fl">w</span><input type="number" id="q3" value="1" oninput="update(1)"></div>
+        <div class="field-row"><span class="fl">x</span><input type="number" id="q0" value="0" oninput="update(1)"></div>
+        <div class="field-row"><span class="fl">y</span><input type="number" id="q1" value="0" oninput="update(1)"></div>
+        <div class="field-row"><span class="fl">z</span><input type="number" id="q2" value="0" oninput="update(1)"></div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Axis-Angle -->
+    <div class="panel" id="ip2">
+      <div class="panel-title" onclick="togglePanel(this)">Axis-Angle <span class="chevron">▾</span></div>
+      <div class="panel-body">
+        <div class="field-row"><span class="fl">x</span><input type="number" id="a0" value="0" oninput="update(2)"></div>
+        <div class="field-row"><span class="fl">y</span><input type="number" id="a1" value="0" oninput="update(2)"></div>
+        <div class="field-row"><span class="fl">z</span><input type="number" id="a2" value="0" oninput="update(2)"></div>
+        <div class="field-row"><span class="fl">θ</span><input type="number" id="a3" value="0" oninput="update(2)"></div>
+      </div>
+    </div>
+
+    <!-- Panel 0: Rotation Matrix -->
+    <div class="panel" id="ip0">
+      <div class="panel-title" onclick="togglePanel(this)">Rotation Matrix <span class="chevron">▾</span></div>
+      <div class="panel-body">
+        <div class="matrix-grid">
+          <input type="number" id="m00" value="1" oninput="update(0)">
+          <input type="number" id="m01" value="0" oninput="update(0)">
+          <input type="number" id="m02" value="0" oninput="update(0)">
+          <input type="number" id="m10" value="0" oninput="update(0)">
+          <input type="number" id="m11" value="1" oninput="update(0)">
+          <input type="number" id="m12" value="0" oninput="update(0)">
+          <input type="number" id="m20" value="0" oninput="update(0)">
+          <input type="number" id="m21" value="0" oninput="update(0)">
+          <input type="number" id="m22" value="1" oninput="update(0)">
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panels-container -->
+
+  <div id="viz-container">
+    <canvas id="viz3d"></canvas>
+  </div>
+
+</div><!-- /layout -->
+</form>
+
+
+</div><!-- /app -->
+
 <script src="three-onlymath.min.js"></script>
 <script>
 var quat = new THREE.Quaternion();
-var highlightedId = 'ip0';
-var inputMode = 0;
-function matrixToString(m)
-{
-    var r = m.elements;
-    var s = 
-         '[ ' +toFixedWidth(r[0])+', '+toFixedWidth(r[4])+', '+toFixedWidth(r[8])+';\n'
-        +'  ' +toFixedWidth(r[1])+', '+toFixedWidth(r[5])+', '+toFixedWidth(r[9])+';\n'
-        +'  ' +toFixedWidth(r[2])+', '+toFixedWidth(r[6])+', '+toFixedWidth(r[10])+' ]';    
-    return s;
+var highlightedId = 'ip4';
+var inputMode = 4;
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function v(id) { return document.getElementById(id).value; }
+
+
+function toRad(x) {
+  return document.getElementById('formatdeg').checked ? +x * Math.PI / 180 : +x;
 }
-function highlight(id)
-{
-    document.getElementById(highlightedId).classList.remove('phigh');
-    highlightedId = id;
-    document.getElementById(id).classList.add('phigh');
+
+function toAngle(x) {
+  return document.getElementById('formatdeg').checked ? x * 180 / Math.PI : x;
 }
-function setQ(q)
-{
-    q.normalize();
-    quat = q;
-    doOutput();
+
+function toReal(x) {
+  var f = parseFloat(x);
+  return (!isNaN(f) && isFinite(f)) ? parseFloat(f.toFixed(7)) : x;
 }
-function doOutput()
-{
-    var q = quat;
-    var m = new THREE.Matrix4();
-    m.makeRotationFromQuaternion(q);
-    document.getElementById("resmatrix").value = matrixToString(m);
-    document.getElementById("resq").value = '[ '+toReal(q.x)+', '+toReal(q.y)+', '+toReal(q.z)+', '+toReal(q.w)+' ]';
-    
-    var axis = [0, 0, 0];
-    var angle = 2 * Math.acos(q.w);
-    if (1 - (q.w * q.w) < 0.000001)
-    {
-        axis[0] = q.x;
-        axis[1] = q.y;
-        axis[2] = q.z;
-    }
-    else
-    {
-        // http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/
-        var s = Math.sqrt(1 - (q.w * q.w));
-        axis[0] = q.x / s;
-        axis[1] = q.y / s;
-        axis[2] = q.z / s;
-    }
-    document.getElementById("resa").value = '{ [ '+toReal(axis[0])+', '+toReal(axis[1])+', '+toReal(axis[2])+' ], '+toReal(toAngle(angle))+' }';
-    
-    document.getElementById("resr").value = '[ '+toReal(toAngle(axis[0] * angle))+', '+toReal(toAngle(axis[1] * angle))+', '+toReal(toAngle(axis[2] * angle))+' ]';
-    
+
+// ── Core ───────────────────────────────────────────────────────────────────
+
+function togglePanel(titleEl) {
+  titleEl.closest('.panel').classList.toggle('collapsed');
+}
+
+function highlight(id) {
+  document.getElementById(highlightedId).classList.remove('phigh');
+  highlightedId = id;
+  document.getElementById(id).classList.add('phigh');
+}
+
+function setQ(q) {
+  q.normalize();
+  quat = q;
+  doOutput();
+}
+
+function doOutput() {
+  var q = quat;
+  var m = new THREE.Matrix4();
+  m.makeRotationFromQuaternion(q);
+  var r = m.elements; // column-major: r[col*4+row]
+
+  if (inputMode !== 0) {
+    document.getElementById('m00').value = toReal(r[0]);
+    document.getElementById('m01').value = toReal(r[4]);
+    document.getElementById('m02').value = toReal(r[8]);
+    document.getElementById('m10').value = toReal(r[1]);
+    document.getElementById('m11').value = toReal(r[5]);
+    document.getElementById('m12').value = toReal(r[9]);
+    document.getElementById('m20').value = toReal(r[2]);
+    document.getElementById('m21').value = toReal(r[6]);
+    document.getElementById('m22').value = toReal(r[10]);
+  }
+
+  if (inputMode !== 1) {
+    document.getElementById('q0').value = toReal(q.x);
+    document.getElementById('q1').value = toReal(q.y);
+    document.getElementById('q2').value = toReal(q.z);
+    document.getElementById('q3').value = toReal(q.w);
+  }
+
+  // Compute axis-angle from quaternion
+  var axis = [0, 0, 0];
+  var angle = 2 * Math.acos(Math.max(-1, Math.min(1, q.w)));
+  var s2 = 1 - q.w * q.w;
+  if (s2 < 0.000001) {
+    axis[0] = q.x; axis[1] = q.y; axis[2] = q.z;
+  } else {
+    var s = Math.sqrt(s2);
+    axis[0] = q.x / s; axis[1] = q.y / s; axis[2] = q.z / s;
+  }
+
+  if (inputMode !== 2) {
+    document.getElementById('a0').value = toReal(axis[0]);
+    document.getElementById('a1').value = toReal(axis[1]);
+    document.getElementById('a2').value = toReal(axis[2]);
+    document.getElementById('a3').value = toReal(toAngle(angle));
+  }
+
+  if (inputMode !== 4) {
     var eu = new THREE.Euler();
-    eu.setFromRotationMatrix(m, document.getElementById("reseuler").value);
-    document.getElementById("rese").value = '[ x: '+toReal(toAngle(eu.toArray()[0]))+', y: '+toReal(toAngle(eu.toArray()[1]))+', z: '+toReal(toAngle(eu.toArray()[2]))+' ]';
+    eu.setFromRotationMatrix(m, document.getElementById('euler').value);
+    var ea = eu.toArray();
+    document.getElementById('e0').value = toReal(toAngle(ea[0]));
+    document.getElementById('e1').value = toReal(toAngle(ea[1]));
+    document.getElementById('e2').value = toReal(toAngle(ea[2]));
+  }
 
-    var spansi = document.getElementsByName('spananglei');
-    for (var i = 0; i < spansi.length; i++)
-    {
-        if (document.getElementById('iformatrad').checked)
-        {
-            spansi[i].textContent = ' (radians)';
-        }
-        else
-        {
-            spansi[i].textContent = ' (degrees)';
-        }
-    }
-     
-    var spansres = document.getElementsByName('spanangleres');
-    for (var i = 0; i < spansres.length; i++)
-    {
-        if (document.getElementById('resformatrad').checked)
-        {
-            spansres[i].textContent = ' (radians)';
-        }
-        else
-        {
-            spansres[i].textContent = ' (degrees)';
-        }
-    }
+drawViz();
 }
-function update(mode)
-{
-    inputMode = mode;
-    var q = new THREE.Quaternion();
-    if (inputMode == 0)
-    {
-        var m = new THREE.Matrix4();
-        var m00 = document.getElementById("m00").value;
-        var m01 = document.getElementById("m01").value;
-        var m02 = document.getElementById("m02").value;
-        var m10 = document.getElementById("m10").value;
-        var m11 = document.getElementById("m11").value;
-        var m12 = document.getElementById("m12").value;
-        var m20 = document.getElementById("m20").value;
-        var m21 = document.getElementById("m21").value;
-        var m22 = document.getElementById("m22").value;
-        m.set(m00, m01, m02, 1, m10, m11, m12, 1, m20, m21, m22, 1, 0, 0, 0, 1);
-        q.setFromRotationMatrix(m);
-    }
-    else if (inputMode == 1)
-    {
-        q = new THREE.Quaternion(document.getElementById("q0").value, 
-            document.getElementById("q1").value, 
-            document.getElementById("q2").value, 
-            document.getElementById("q3").value);
-    }
-    else if (inputMode == 2)
-    {
-        q = new THREE.Quaternion();
-        var axis = new THREE.Vector3(document.getElementById("a0").value, 
-            document.getElementById("a1").value,
-            document.getElementById("a2").value);
-        axis.normalize();
-        q.setFromAxisAngle(axis, toRad(document.getElementById("a3").value));
-    }
-    else if (inputMode == 3)
-    {
-        var axis = new THREE.Vector3(document.getElementById("r0").value, 
-            document.getElementById("r1").value,
-            document.getElementById("r2").value);
-        var angle = toRad(axis.length());
-        axis.normalize();
-        q.setFromAxisAngle(axis, angle);
-    }
-    else if (inputMode == 4)
-    {
-        var e = new THREE.Euler(toRad(document.getElementById("e0").value), 
-            toRad(document.getElementById("e1").value),
-            toRad(document.getElementById("e2").value),
-            document.getElementById("euler").value);
-        q.setFromEuler(e);
-    }
-    else if (inputMode ==5)
-    {
-        var m = new THREE.Matrix4();
-        var P = getVector("P");
-        var Q = getVector("Q");
-        var R = getVector("R");
-        var x = new THREE.Vector3();
-        var y = new THREE.Vector3();
-        var z = new THREE.Vector3();
-        x.subVectors(Q, P).normalize();
-        y.subVectors(R, P);
-        z.crossVectors(x, y).normalize();
-        y.crossVectors(z, x).normalize();
-        m.set(x.x, y.x, z.x, 1, x.y, y.y, z.y, 1, x.z, y.z, z.z, 1, 0, 0, 0, 1);
-        q.setFromRotationMatrix(m);
-    }
-    setQ(q);
-    highlight('ip' + inputMode);
+
+function onFormatChange() {
+  // Refresh all panels using the stored quaternion (avoid re-parsing with wrong unit)
+  var saved = inputMode;
+  inputMode = -1; // causes doOutput to update every panel
+  doOutput();
+  inputMode = saved;
 }
-function getVector(root)
-{
-    vx = document.getElementById(root + "x").value;
-    vy = document.getElementById(root + "y").value;
-    vz = document.getElementById(root + "z").value;
-    return new THREE.Vector3(vx, vy, vz);
+
+function update(mode) {
+  inputMode = mode;
+  var q = new THREE.Quaternion();
+
+  if (mode === 0) {
+    var mx = new THREE.Matrix4();
+    mx.set(
+      +v('m00'), +v('m01'), +v('m02'), 1,
+      +v('m10'), +v('m11'), +v('m12'), 1,
+      +v('m20'), +v('m21'), +v('m22'), 1,
+      0, 0, 0, 1
+    );
+    q.setFromRotationMatrix(mx);
+  } else if (mode === 1) {
+    q = new THREE.Quaternion(+v('q0'), +v('q1'), +v('q2'), +v('q3'));
+  } else if (mode === 2) {
+    var ax = new THREE.Vector3(+v('a0'), +v('a1'), +v('a2'));
+    ax.normalize();
+    q.setFromAxisAngle(ax, toRad(+v('a3')));
+  } else if (mode === 4) {
+    var eu = new THREE.Euler(
+      toRad(+v('e0')), toRad(+v('e1')), toRad(+v('e2')),
+      document.getElementById('euler').value
+    );
+    q.setFromEuler(eu);
+  }
+
+  setQ(q);
+  highlight('ip' + mode);
 }
-function toRad(x)
-{
-    if (document.getElementById("iformatdeg").checked)
-    {
-        return x / 180 * Math.PI;
+
+// ── 3D Visualization ───────────────────────────────────────────────────────
+
+var viewQuat = new THREE.Quaternion();
+
+var vizDrag = false, vizLastX = 0, vizLastY = 0;
+
+// three-onlymath.min.js omits Vector3.applyQuaternion, copy, premultiply
+function applyQuat(v3, q) {
+  var vx = v3.x, vy = v3.y, vz = v3.z;
+  var qx = q.x, qy = q.y, qz = q.z, qw = q.w;
+  var tx = 2 * (qy * vz - qz * vy);
+  var ty = 2 * (qz * vx - qx * vz);
+  var tz = 2 * (qx * vy - qy * vx);
+  return new THREE.Vector3(
+    vx + qw * tx + qy * tz - qz * ty,
+    vy + qw * ty + qz * tx - qx * tz,
+    vz + qw * tz + qx * ty - qy * tx
+  );
+}
+
+// Computes: q = left * q  (in-place premultiply)
+function quatPremul(q, left) {
+  var ax = left.w*q.x + left.x*q.w + left.y*q.z - left.z*q.y;
+  var ay = left.w*q.y - left.x*q.z + left.y*q.w + left.z*q.x;
+  var az = left.w*q.z + left.x*q.y - left.y*q.x + left.z*q.w;
+  var aw = left.w*q.w - left.x*q.x - left.y*q.y - left.z*q.z;
+  q.x = ax; q.y = ay; q.z = az; q.w = aw;
+}
+
+function initViz() {
+  var canvas = document.getElementById('viz3d');
+
+  function syncSize() {
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    var w = rect.width  || canvas.offsetWidth  || 280;
+    var h = rect.height || canvas.offsetHeight || 280;
+    canvas.width  = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+  }
+
+  if (window.ResizeObserver) {
+    new ResizeObserver(function() { syncSize(); drawViz(); }).observe(canvas);
+  } else {
+    window.addEventListener('resize', function() { syncSize(); drawViz(); });
+  }
+  syncSize();
+
+  function onDown(x, y) { vizDrag = true; vizLastX = x; vizLastY = y; }
+  function onMove(x, y) {
+    if (!vizDrag) return;
+    var dx = x - vizLastX, dy = y - vizLastY;
+    vizLastX = x; vizLastY = y;
+    var s = 0.007;
+    var ry = new THREE.Quaternion();
+    ry.setFromAxisAngle(new THREE.Vector3(0, 1, 0), dx * s);
+    var rx = new THREE.Quaternion();
+    rx.setFromAxisAngle(new THREE.Vector3(1, 0, 0), dy * s);
+    quatPremul(viewQuat, ry);
+    quatPremul(viewQuat, rx);
+    drawViz();
+  }
+  function onUp() { vizDrag = false; }
+
+  canvas.addEventListener('mousedown',  function(e) { onDown(e.clientX, e.clientY); });
+  canvas.addEventListener('mousemove',  function(e) { onMove(e.clientX, e.clientY); });
+  canvas.addEventListener('mouseup',    onUp);
+  canvas.addEventListener('mouseleave', onUp);
+  canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault(); onDown(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+  canvas.addEventListener('touchmove',  function(e) {
+    e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+  canvas.addEventListener('touchend', onUp);
+}
+
+function drawViz() {
+  var canvas = document.getElementById('viz3d');
+  var W = canvas.width, H = canvas.height;
+  if (!W || !H) return;
+
+  var ctx   = canvas.getContext('2d');
+  var dpr   = window.devicePixelRatio || 1;
+  var cx    = W / 2, cy = H / 2;
+  var scale = Math.min(W, H) * 0.35;
+  var depth = 3.0;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+
+  function proj(v3) {
+    var vv = applyQuat(v3, viewQuat);
+    var dz = depth - vv.z;
+    return { x: cx + vv.x * scale / dz, y: cy - vv.y * scale / dz, z: vv.z };
+  }
+
+  var O = proj(new THREE.Vector3(0, 0, 0));
+
+  // Faint reference circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, scale, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = dpr;
+  ctx.stroke();
+
+  // Faint identity reference axes with labels
+  var refAxes = [
+    { a: [2,0,0], label: 'X' },
+    { a: [0,2,0], label: 'Y' },
+    { a: [0,0,2], label: 'Z' },
+  ];
+  var fsize = Math.max(11, Math.round(scale * 0.115));
+  refAxes.forEach(function(ra) {
+    var t = proj(new THREE.Vector3(ra.a[0], ra.a[1], ra.a[2]));
+    ctx.beginPath();
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(t.x, t.y);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = dpr;
+    ctx.stroke();
+    var dx = t.x - O.x, dy = t.y - O.y;
+    var len = Math.hypot(dx, dy);
+    if (len > 2) {
+      var ux = dx / len, uy = dy / len;
+      var arrLen = scale * 0.14;
+      ctx.font = 'italic ' + fsize + 'px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(ra.label, t.x + ux * arrLen * 1.9, t.y + uy * arrLen * 1.9);
     }
-    else
-    {
-        return x;
-    }
+  });
+
+  // Rotated axes — sorted back-to-front (painter's algorithm)
+  var AXES = [
+    { dir: new THREE.Vector3(1, 0, 0), color: '#ff5555', label: "X'" },
+    { dir: new THREE.Vector3(0, 1, 0), color: '#44dd66', label: "Y'" },
+    { dir: new THREE.Vector3(0, 0, 1), color: '#4499ff', label: "Z'" },
+  ];
+
+  var drawn = AXES.map(function(ax) {
+    var rd = applyQuat(ax.dir, quat);
+    var tip = proj(rd);
+    return { color: ax.color, label: ax.label, tip: tip, sortZ: tip.z };
+  }).sort(function(a, b) { return b.sortZ - a.sortZ; });
+
+  var lw      = Math.max(1.5, 2 * dpr);
+  var arrLen  = scale * 0.14;
+
+  drawn.forEach(function(ax) {
+    var ox = O.x, oy = O.y, tx = ax.tip.x, ty = ax.tip.y;
+    var dx = tx - ox, dy = ty - oy;
+    var len = Math.hypot(dx, dy);
+    if (len < 2) return;
+    var ux = dx / len, uy = dy / len;
+
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(tx, ty);
+    ctx.strokeStyle = ax.color;
+    ctx.lineWidth = lw;
+    ctx.stroke();
+
+    ctx.font = 'bold ' + fsize + 'px system-ui,sans-serif';
+    ctx.fillStyle = ax.color;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = "center";
+    ctx.fillText(ax.label, tx + ux * arrLen * 1, ty + uy * arrLen * 1);
+  });
+
+  // Origin dot
+  ctx.beginPath();
+  ctx.arc(O.x, O.y, lw * 1.8, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
 }
-function toAngle(x)
-{
-    if (document.getElementById("resformatdeg").checked)
-    {
-        return x * 180 / Math.PI;
-    }
-    else
-    {
-        return x;
-    }
-}
-function toReal(x){
-	if (!isNaN(parseFloat(x)) && isFinite(parseFloat(x)))
-	{
-		return parseFloat(parseFloat(x).toFixed(7));
-	}
-	else
-	{
-		return x;
-	}
-}
-function toFixedWidth(x){
-	if (!isNaN(parseFloat(x)) && isFinite(parseFloat(x)))
-	{
-		var s = x.toFixed(7);
-                if (x >= 0) s = ' ' + s;
-                return s;
-	}
-	else
-	{
-		return x;
-	}
-}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+window.addEventListener('load', function() {
+  // Z-up view: azimuth 225°, elevation -30° → Z up, X lower-left, Y lower-right
+  viewQuat.x = -0.1913;
+  viewQuat.y = -0.4619;
+  viewQuat.z = -0.8001;
+  viewQuat.w =  0.3314;
+
+  initViz();
+  requestAnimationFrame(function() {
+    var canvas = document.getElementById('viz3d');
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.offsetWidth || 280;
+    canvas.width  = Math.round(w * dpr);
+    canvas.height = Math.round(w * dpr);
+    update(4);
+  });
+});
 </script>
-<p>Output angle format
-<label><input type="radio" id="resformatrad" name="resformat" value="0" checked onchange="doOutput()"/>Radians</label>
-<label><input type="radio" id="resformatdeg" name="resformat" value="1" onchange="doOutput()"/>Degrees</label>
-<p>Rotation matrix
-<br /><textarea id="resmatrix" rows="3" cols="70" readonly></textarea>
-<p>Quaternion [x, y, z, w]
-<br /><textarea id="resq" rows="1" cols="85" readonly></textarea>
-<p>Axis-Angle {[x, y, z], angle<span name="spanangleres"> (radians)</span>}
-<br /><textarea id="resa" rows="1" cols="85" readonly></textarea>
-<p>Axis with angle magnitude<span name="spanangleres"> (radians)</span> [x, y, z]
-<br /><textarea id="resr" rows="1" cols="85" readonly></textarea>
-<p>Euler angles<span name="spanangleres"> (radians)</span>
-<select id="reseuler" onchange="doOutput()">
-<option value="XYZ" selected>XYZ</option>
-<option value="XZY">XZY</option>
-<option value="YXZ">YXZ</option>
-<option value="YZX">YZX</option>
-<option value="ZXY">ZXY</option>
-<option value="ZYX">ZYX</option>
-</select>
-<br />
-<textarea id="rese" rows="1" cols="70" readonly></textarea>
-</div>
-<br style="clear: left;" />
-
-<div class="dcol">
-<h2>Details</h2>
-<p>
-Please note that rotation formats vary.
-For quaternions, it is not uncommon to denote the real part first.
-Euler angles can be defined with many different combinations (see <a href="https://en.wikipedia.org/wiki/Euler_angles#Tait.E2.80.93Bryan_angles">definition of Cardan angles</a>).
-All input is normalized to unit quaternions and may therefore mapped to different ranges.
-The converter can therefore also be used to normalize a rotation matrix or a quaternion.
-Results are rounded to seven digits.
-</div>
-
-<div class="dcol">
-<h2>Software</h2>
-<p>
-This calculator for 3D rotations is open-source software.
-If there are any bugs, please push fixes to the <a href="https://github.com/gaschler/rotationconverter">Rotation Converter git repo</a>.
-For almost all conversions, <a href="https://threejs.org/docs/index.html#api/math/Quaternion">three.js Math</a> is used internally.
-</div>
-
-</form>
-</div>
-</div>
-</body></html>
+</body>
+</html>
