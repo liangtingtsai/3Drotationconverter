@@ -403,11 +403,11 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// Ctrl+C — copy panel values (skip if user has text selected inside an input)
+// Ctrl+C — copy whole panel only when no input is focused
 document.addEventListener('copy', function(e) {
   if (!kbPanel) return;
   var ae = document.activeElement;
-  if (ae && ae.tagName === 'INPUT' && ae.selectionStart !== ae.selectionEnd) return;
+  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT')) return;
   e.preventDefault();
   var text = kbPanelIds[kbPanel].map(function(id) { return document.getElementById(id).value; }).join(', ');
   e.clipboardData.setData('text/plain', text);
