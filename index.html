@@ -84,7 +84,7 @@ input[type="radio"] {
   background: #fff;
   border: 1.5px solid #d8d8ec;
   border-radius: 10px;
-  padding: 0.6rem 1.1rem 0.7rem;
+  padding: 0.6rem 1.1rem 0.6rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -99,7 +99,6 @@ input[type="radio"] {
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: #888;
-  margin-bottom: 0.5rem;
   user-select: none;
 }
 
@@ -111,10 +110,11 @@ input[type="radio"] {
   align-items: center;
   justify-content: space-between;
   user-select: none;
+  position: relative;
 }
 
 .chevron {
-  font-size: 0.85rem;
+  font-size: 1.05rem;
   color: #aaa;
   transition: transform 0.2s;
   flex-shrink: 0;
@@ -122,9 +122,10 @@ input[type="radio"] {
 
 .panel.collapsed .chevron { transform: rotate(-90deg); }
 
-.panel-body { margin-top: 0.2rem; }
+.panel-body { margin-top: 0.7rem; }
 
 .panel.collapsed .panel-body { display: none; }
+
 
 .panel-note {
   font-size: 0.72rem;
@@ -230,6 +231,20 @@ select:focus { outline: none; border-color: #2d2d8f; }
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  position: relative;
+}
+
+#viz-label {
+  position: absolute;
+  bottom: 0.6rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.55);
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: 0.03em;
 }
 
 #viz3d {
@@ -334,6 +349,7 @@ select:focus { outline: none; border-color: #2d2d8f; }
 
   <div id="viz-container">
     <canvas id="viz3d"></canvas>
+    <div id="viz-label">The rotation maps (x, y, z) &rarr; (x&prime;, y&prime;, z&prime;)</div>
   </div>
 
 </div><!-- /layout -->
@@ -366,11 +382,61 @@ function toReal(x) {
   return (!isNaN(f) && isFinite(f)) ? parseFloat(f.toFixed(7)) : x;
 }
 
+// ── Panel keyboard focus ────────────────────────────────────────────────────
+
+var kbPanel = null;
+var kbPanelIds  = { euler:['e0','e1','e2'], quat:['q3','q0','q1','q2'], axis:['a0','a1','a2','a3'], matrix:['m00','m01','m02','m10','m11','m12','m20','m21','m22'] };
+var kbPanelMode = { euler:4, quat:1, axis:2, matrix:0 };
+var kbPanelEl   = { euler:'ip4', quat:'ip1', axis:'ip2', matrix:'ip0' };
+var elToPanel   = { ip4:'euler', ip1:'quat', ip2:'axis', ip0:'matrix' };
+
+function setKbPanel(name) {
+  kbPanel = name || null;
+  if (kbPanel) highlight(kbPanelEl[kbPanel]); // reuse existing highlight, no double indicator
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('panels-container').addEventListener('click', function(e) {
+    var panel = e.target.closest('.panel');
+    if (!panel || !elToPanel[panel.id]) return;
+    setKbPanel(elToPanel[panel.id]);
+  });
+});
+
+// Ctrl+C — copy panel values (skip if user has text selected inside an input)
+document.addEventListener('copy', function(e) {
+  if (!kbPanel) return;
+  var ae = document.activeElement;
+  if (ae && ae.tagName === 'INPUT' && ae.selectionStart !== ae.selectionEnd) return;
+  e.preventDefault();
+  var text = kbPanelIds[kbPanel].map(function(id) { return document.getElementById(id).value; }).join(', ');
+  e.clipboardData.setData('text/plain', text);
+});
+
+// Ctrl+V — paste into panel (skip if focused input belongs to a different panel)
+document.addEventListener('paste', function(e) {
+  if (!kbPanel) return;
+  var ae = document.activeElement;
+  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT')) {
+    var aePanel = ae.closest('.panel');
+    var kbEl = document.getElementById(kbPanelEl[kbPanel]);
+    if (aePanel !== kbEl) return; // input in a different panel — let native paste through
+  }
+  e.preventDefault();
+  var text = (e.clipboardData || window.clipboardData).getData('text');
+  text = text.replace(/[\[\]()\{\}]/g, '');
+  var tokens = text.trim().split(/[\s,]+/).filter(function(t) { return t !== '' && !isNaN(t); });
+  if (!tokens.length) return;
+  kbPanelIds[kbPanel].forEach(function(id, i) { if (tokens[i] !== undefined) document.getElementById(id).value = tokens[i]; });
+  update(kbPanelMode[kbPanel]);
+});
+
 // ── Core ───────────────────────────────────────────────────────────────────
 
 function togglePanel(titleEl) {
   titleEl.closest('.panel').classList.toggle('collapsed');
 }
+
 
 function highlight(id) {
   document.getElementById(highlightedId).classList.remove('phigh');
